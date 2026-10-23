@@ -21,7 +21,6 @@
             <div class="modal-header">
                 <i class="ri-car-fill" style="font-size: 32px; color: var(--accent-color);"></i>
                 <h2>Maşınınızı Seçin</h2>
-                <p>Davam etmək üçün avtomobil seçin</p>
             </div>
             <!-- İlkin açılışda görünən Loading Animasiyası -->
             <div id="modalCarList" class="modal-car-list">
@@ -284,7 +283,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
+          navigator.serviceWorker.register('./sw.js?v=1.1')
             .then((reg) => console.log('Service Worker qeydiyyatdan keçdi:', reg.scope))
             .catch((err) => console.log('Service Worker xətası:', err));
         });

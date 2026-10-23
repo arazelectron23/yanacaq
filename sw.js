@@ -1,10 +1,10 @@
 const CACHE_NAME = 'yanacaq-pwa-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/firebase.js'
+  './',
+  './index.html',
+  './style.css',
+  './app.js',
+  './firebase.js'
 ];
 
 // Quraşdırma və faylları yaddaşa (cache) yığma
