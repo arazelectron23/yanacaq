@@ -1,10 +1,12 @@
-const CACHE_NAME = 'yanacaq-pwa-v1';
+const CACHE_NAME = 'yanacaq-pwa-v2';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
   './app.js',
-  './firebase.js'
+  './firebase.js',
+  './manifest.json',
+  './favicon.png'
 ];
 
 // Quraşdırma və faylları yaddaşa (cache) yığma
@@ -12,6 +14,21 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(urlsToCache);
+    })
+  );
+});
+
+// Köhnə keşləri təmizləmə
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
     })
   );
 });
