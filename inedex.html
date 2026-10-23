@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yanacaq İzləyici</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+</head>
+<body>
+
+   <!-- İLK AÇILIŞDA MAŞIN SEÇMƏK ÜÇÜN MODAL PƏNCƏRƏ -->
+    <div id="carSelectModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="ri-car-fill" style="font-size: 32px; color: var(--accent-color);"></i>
+                <h2>Maşınınızı Seçin</h2>
+                <p>Davam etmək üçün avtomobil seçin</p>
+            </div>
+            <!-- İlkin açılışda görünən Loading Animasiyası -->
+            <div id="modalCarList" class="modal-car-list">
+                <div style="text-align: center; padding: 15px;">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TARİXÇƏ MODAL PƏNCƏRƏSİ -->
+    <div id="historyModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 420px; max-height: 85vh; overflow-y: auto;">
+            <div class="modal-header" style="flex-direction: row; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="ri-history-line" style="font-size: 22px; color: var(--accent-color);"></i>
+                    <h2 style="font-size: 16px;">Yanacaq Tarixçəsi</h2>
+                </div>
+                <button id="closeHistoryModalBtn" class="icon-btn" style="width: 32px; height: 32px; border: none;"><i class="ri-close-line"></i></button>
+            </div>
+
+            <!-- TƏZƏ: SAÝLANAN / UMUMY MÖÇBERİ GÖRKEZÝÄN BÖLÜM -->
+            <div style="background: var(--bg-color); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span style="font-size: 11px; color: var(--text-secondary); display: block;">Hesablanan Məbləğ:</span>
+                    <span id="modalTotalSpend" style="font-size: 20px; font-weight: 700; color: var(--accent-color);">0.00 AZN</span>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 11px; color: var(--text-secondary); display: block;">Cəmi Yanacaq:</span>
+                    <span id="modalTotalLiters" style="font-size: 14px; font-weight: 600; color: var(--text-primary);">0.0 L</span>
+                </div>
+            </div>
+
+            <!-- Tarix Aralığı Filtri -->
+            <div class="form-section" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <label style="font-size: 11px; color: var(--text-secondary);"><i class="ri-calendar-line"></i> Tarix Aralığı ilə Filtrlə</label>
+                <div class="input-row">
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label style="font-size: 10px;">Başlanğıc</label>
+                        <input type="date" id="startDate" style="padding: 6px; font-size: 11px;">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label style="font-size: 10px;">Bitiş</label>
+                        <input type="date" id="endDate" style="padding: 6px; font-size: 11px;">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 6px; margin-top: 4px;">
+                    <button type="button" id="applyFilterBtn" style="flex: 1; background: var(--accent-color); color: #0f172a; border: none; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Tətbiq Et</button>
+                    <button type="button" id="resetFilterBtn" style="background: var(--border-color); color: var(--text-primary); border: none; padding: 8px 12px; border-radius: 8px; font-weight: 600; font-size: 11px; cursor: pointer;">Hamısı</button>
+                </div>
+            </div>
+
+            <!-- Tarixçə Siyahısı -->
+            <div class="history-list" id="historyList" style="display: flex; flex-direction: column; gap: 8px;">
+                <p style="font-size: 12px; color: var(--text-secondary); text-align: center; padding: 10px;">Hələ heç bir qeyd yoxdur.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TƏSDİQ MODAL PƏNCƏRƏSİ -->
+    <div id="confirmModal" class="modal-overlay" style="display: none; z-index: 1100;">
+        <div class="modal-content" style="text-align: center; gap: 16px;">
+            <div class="modal-header">
+                <i class="ri-error-warning-line" style="font-size: 36px; color: #f43f5e;"></i>
+                <h2>Qeydi Sil</h2>
+                <p id="confirmModalText">Bu qeydi silmək istədiyinizdən əminsiniz?</p>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="button" id="cancelDeleteBtn" style="flex: 1; background: var(--border-color); color: var(--text-primary); border: none; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer;">Ləğv Et</button>
+                <button type="button" id="confirmDeleteBtn" style="flex: 1; background: #f43f5e; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer;">Bəli, Sil</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bildiriş (Toast Notification) Elementi -->
+    <div id="toastNotification">
+        <i id="toastIcon" class="ri-information-line" style="font-size: 18px;"></i>
+        <span id="toastMessage">Bildiriş mətni</span>
+    </div>
+
+    <main class="mobile-container">
+        
+        <!-- ================= SƏHİFƏ 1: ANA SƏHİFƏ ================= -->
+        <div id="homePage" class="page active">
+            <!-- Üst Başlıq Kartı -->
+            <header class="app-header">
+                <div class="user-info">
+                    <div class="avatar" id="changeCarBtn" style="cursor: pointer;" title="Maşını dəyiş"><i class="ri-car-fill"></i></div>
+                    <div>
+                        <h2 class="username">Yanacaq Paneli</h2>
+                    </div>
+                </div>
+                <button class="icon-btn" id="openSettingsBtn" title="İdarəetmə Paneli">
+                    <i class="ri-settings-3-line"></i>
+                </button>
+            </header>
+
+            <!-- Ümumi Statistika Kartı (Kliklənəndə Tarixçə Modalı Açılır) -->
+            <section class="stat-card" id="openHistoryModalBtn" style="cursor: pointer;" title="Tarixçəyə baxmaq üçün klikləyin">
+                <div class="stat-header">
+                    <span id="activeCarDisplay">---</span>
+                    <span class="badge" id="activeFuelDisplay">Aİ-92</span>
+                </div>
+                <div class="stat-amount">
+                    <span id="totalSpend">0.00</span>
+                    <span class="currency">₼</span>
+                </div>
+                <div class="stat-footer" style="justify-content: space-between; align-items: center;">
+                    <div style="display: flex; gap: 16px;">
+                        <div class="stat-item">
+                            <i class="ri-gas-station-line"></i>
+                            <span id="totalLiters">0 L yanacaq</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="ri-roadster-line"></i>
+                            <span id="lastOdometer">0 km</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Yanacaq Əlavə Etmə Forması -->
+            <section class="form-section">
+                <h3><i class="ri-add-circle-line"></i> Yanacaq Doldurma Qeydi</h3>
+                <form id="fuelForm">
+                   <div class="input-row">
+                        <div class="input-group">
+                            <label>Litr</label>
+                            <input type="number" id="liters" placeholder="" step="0.1" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Məbləğ</label>
+                            <input type="number" id="amount" placeholder="" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Probeq (KM)</label>
+                        <input type="number" id="odometer" placeholder="məs: 145000" required>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        <i class="ri-save-line"></i> Yadda Saxla
+                    </button>
+                </form>
+            </section>
+        </div>
+
+        <!-- ================= SƏHİFƏ 2: İDARƏETMƏ PANELİ / AYARLAR ================= -->
+        <div id="settingsPage" class="page">
+            <header class="app-header">
+                <button class="icon-btn" id="closeSettingsBtn" title="Geri">
+                    <i class="ri-arrow-left-line"></i>
+                </button>
+                <h2 class="username" style="font-size: 18px;">İdarəetmə Paneli</h2>
+                <div style="width: 40px;"></div>
+            </header>
+
+            <!-- 1. MÖVCUD MAŞINLAR -->
+            <section class="form-section">
+                <h3><i class="ri-car-fill"></i> Əlavə Olunmuş Maşınlar</h3>
+                <div id="carListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Firebase-dən yüklənəcək -->
+                </div>
+            </section>
+
+            <!-- 2. YENİ MAŞIN ƏLAVƏ ET -->
+            <section class="form-section">
+                <h3><i class="ri-add-box-line"></i> Yeni Maşın Əlavə Et</h3>
+                <form id="addCarForm" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label>Maşın Nömrəsi / Adı</label>
+                        <input type="text" id="newCarName" placeholder="Məs: 10-AA-000 (və ya Opel Astra)" required>
+                    </div>
+                    
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label>Yanacaq Növü</label>
+                        <select id="newCarFuelType">
+                            <option value="92">Aİ-92</option>
+                            <option value="dizel">Dizel</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="submit-btn" style="margin-top: 4px;">
+                        <i class="ri-add-line"></i> Maşın Əlavə Et
+                    </button>
+                </form>
+            </section>
+
+            <!-- 3. YANACAQ QİYMƏTLƏRİ (Sadece Aİ-92 və Dizel) -->
+            <section class="form-section">
+                <h3><i class="ri-price-tag-3-line"></i> Yanacaq Litr Qiymətləri (AZN)</h3>
+                <form id="savePricesForm" style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                    <div class="input-row">
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Aİ-92</label>
+                            <input type="number" id="price92" value="1.10" step="0.01" required>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Dizel</label>
+                            <input type="number" id="priceDizel" value="1.00" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" style="background: var(--accent-gradient); margin-top: 4px;">
+                        <i class="ri-save-3-line"></i> Qiymətləri Yadda Saxla
+                    </button>
+                </form>
+            </section>
+        </div>
+
+        <!-- TƏFƏRRÜAT (DETAL) MODAL PƏNCƏRƏSİ -->
+    <div id="detailModal" class="modal-overlay" style="display: none; z-index: 1050;">
+        <div class="modal-content" style="max-width: 360px;">
+            <div class="modal-header" style="flex-direction: row; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="ri-gas-station-fill" style="font-size: 22px; color: var(--accent-color);"></i>
+                    <h2 style="font-size: 16px;">Qeyd Təfərrüatları</h2>
+                </div>
+                <button id="closeDetailModalBtn" class="icon-btn" style="width: 32px; height: 32px; border: none;"><i class="ri-close-line"></i></button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                <div style="background: var(--bg-color); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">Avtomobil:</span>
+                    <strong id="detailCarName" style="font-size: 13px;">---</strong>
+                </div>
+                <div style="background: var(--bg-color); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">Yanacaq Növü:</span>
+                    <strong id="detailFuelType" style="font-size: 13px;">---</strong>
+                </div>
+                <div style="background: var(--bg-color); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">Vurulan Yanacaq:</span>
+                    <strong id="detailLiters" style="font-size: 13px;">0 L</strong>
+                </div>
+                <div style="background: var(--bg-color); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">Ödənilən Məbləğ:</span>
+                    <strong id="detailAmount" style="font-size: 13px; color: var(--accent-color);">0.00 AZN</strong>
+                </div>
+                <div style="background: var(--bg-color); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">Probeq (KM):</span>
+                    <strong id="detailOdometer" style="font-size: 13px;">0 km</strong>
+                </div>
+                <div style="background: var(--bg-color); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">Tarix:</span>
+                    <strong id="detailDate" style="font-size: 13px;">---</strong>
+                </div>
+            </div>
+
+            <button type="button" id="deleteFromDetailBtn" style="background: #f43f5e; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px;">
+                <i class="ri-delete-bin-line"></i> Bu Qeydi Sil
+            </button>
+        </div>
+    </div>
+
+    </main>
+
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="app.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => console.log('Service Worker qeydiyyatdan keçdi:', reg.scope))
+            .catch((err) => console.log('Service Worker xətası:', err));
+        });
+      }
+    </script>
+</body>
+</html>
