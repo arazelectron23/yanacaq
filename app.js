@@ -570,3 +570,100 @@ function showNotification(message, type = 'success') {
         toast.className = '';
     }, 3000);
 }
+
+// --- MODALIN ÇÖLünə KLİKLƏYƏNDƏ BAĞLANMASI ---
+window.addEventListener('click', (e) => {
+    const historyModal = document.getElementById('historyModal');
+    const detailModal = document.getElementById('detailModal');
+    const confirmModal = document.getElementById('confirmModal');
+
+    // Əgər birbaşa modalın özünə (qara fon overlay-ə) kliklənibsə, pəncərəni bağla
+    if (e.target === historyModal) {
+        history.back(); // Tarixçəni sinxron saxlamaq üçün history.back() istifadə edirik
+    }
+    if (e.target === detailModal) {
+        history.back();
+    }
+    if (e.target === confirmModal) {
+        confirmModal.style.display = 'none';
+    }
+});
+
+// --- PROBEQ KAMERA SKANERİ MƏNTİQİ ---
+const openOdometerScannerBtn = document.getElementById('openOdometerScannerBtn');
+const scannerModal = document.getElementById('scannerModal');
+const closeScannerModalBtn = document.getElementById('closeScannerModalBtn');
+const takePhotoBtn = document.getElementById('takePhotoBtn');
+const odometerImageInput = document.getElementById('odometerImageInput');
+const detectedResultArea = document.getElementById('detectedResultArea');
+const detectedNumberBox = document.getElementById('detectedNumberBox');
+const confirmOdometerBtn = document.getElementById('confirmOdometerBtn');
+
+let scannedOdometerValue = '';
+
+openOdometerScannerBtn.addEventListener('click', () => {
+    scannerModal.style.display = 'flex';
+    detectedResultArea.style.display = 'none';
+    confirmOdometerBtn.style.display = 'none';
+});
+
+closeScannerModalBtn.addEventListener('click', () => {
+    scannerModal.style.display = 'none';
+});
+
+takePhotoBtn.addEventListener('click', () => {
+    odometerImageInput.click(); // Telefonun kamerasını və ya qalereyasını açır
+});
+
+odometerImageInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    takePhotoBtn.innerHTML = `<i class="ri-loader-4-line spinner" style="font-size: 32px;"></i> <span>Oxunur, zəhmət olmasa gözləyin...</span>`;
+
+    try {
+        // Tesseract.js ilə şəkildəki rəqəmləri oxuyuruq
+        const result = await Tesseract.recognize(
+            file,
+            'eng', // İngilis simvolları/rəqəmləri
+            { logger: m => console.log(m) }
+        );
+
+        const text = result.data.text;
+        console.log("Oxunan mətn:", text);
+
+        // Mətndən yalnız rəqəmləri təmizləyib çıxarırıq (məsələn: 160006)
+        // Şəkildəki 432.2 və ya digər simvolları süzgəcdən keçirib ən uzun rəqəm qrupunu tapırıq
+        const numbersFound = text.match(/\d+/g);
+        
+        if (numbersFound && numbersFound.length > 0) {
+            // Adətən probeq ən uzun rəqəm olur (məsələn 160006)
+            let bestMatch = numbersFound.reduce((a, b) => a.length > b.length ? a : b);
+            
+            scannedOdometerValue = bestMatch;
+            detectedNumberBox.textContent = scannedOdometerValue;
+            detectedResultArea.style.display = 'block';
+            confirmOdometerBtn.style.display = 'block';
+        } else {
+            showNotification("Rəqəm tapılmadı, yenidən cəhd edin.", "error");
+        }
+
+    } catch (error) {
+        console.error("OCR xətası:", error);
+        showNotification("Şəkil oxunarkən xəta baş verdi.", "error");
+    } finally {
+        takePhotoBtn.innerHTML = `<i class="ri-camera-lens-line" style="font-size: 32px; color: var(--accent-color);"></i> <span>Kamera ilə çək və ya şəkil seç</span>`;
+    }
+});
+
+// Tapılan rəqəmin üzərinə vuranda və ya Təsdiq Et düyməsinə basanda
+const applyScannedValue = () => {
+    if (scannedOdometerValue) {
+        document.getElementById('odometer').value = scannedOdometerValue;
+        scannerModal.style.display = 'none';
+        showNotification(`Probeq təyin edildi: ${scannedOdometerValue} km`, "success");
+    }
+};
+
+detectedNumberBox.addEventListener('click', applyScannedValue);
+confirmOdometerBtn.addEventListener('click', applyScannedValue);
